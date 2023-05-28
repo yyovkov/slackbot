@@ -58,7 +58,8 @@ var postFileCmd = &cobra.Command{
 }
 
 func uploadFile(file slack.File, token, channelID string) error {
-	_, err := file.Upload(token, channelID)
+	// _, err := file.Upload(token, channelID)
+	_, err := file.UploadFromS3(token, channelID)
 	return err
 }
 

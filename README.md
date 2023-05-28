@@ -62,3 +62,9 @@ cobra-cli add message -p send
 ``` bash
 go build
 ```
+
+## Run Against S3
+
+``` bash
+export AWS_PROFILE=sandbox
+```
