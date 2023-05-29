@@ -1,38 +1,82 @@
 package slack
 
 import (
-	"context"
-	"log"
+	"bytes"
+	"errors"
+	"io"
+	"path/filepath"
+	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/slack-go/slack"
 )
 
 type File struct {
-	Title          string
-	InitialComment string
-	Filetype       string
-	Filename       string
 	Channels       []string
+	InitialComment string
 	File           string
+	Filename       string
+	Filetype       string
+	Reader         io.Reader
+	Title          string
 }
 
-func (f *File) Upload(token, channelID string) (string, error) {
+func (f *File) fileLoader() error {
+
+	var err error
+	var fileData []byte
+
+	switch {
+	case strings.HasPrefix(f.File, "file://"):
+		f.File = strings.TrimPrefix(f.File, "file://")
+		fileData, err = LocalFileReader(f.File)
+	case strings.HasPrefix(f.File, "s3://"):
+		f.File = strings.TrimPrefix(f.File, "s3://")
+		fileData, err = S3BucketObjectReader(f.File)
+	default:
+		return errors.New("unknown source file protocol")
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// Set file Reader
+	f.Reader = bytes.NewReader(fileData)
+
+	// Set file title
+	if f.Filename == "" {
+		f.Filename = filepath.Base(f.Filename)
+	}
+
+	// Set file title
+	if f.Title == "" {
+		f.Title = f.Filename
+	}
+
+	return nil
+}
+
+func (f *File) Upload(token string) (string, error) {
+
+	// Load data to be uploaded
+	err := f.fileLoader()
+	if err != nil {
+		return "", err
+	}
+
 	// TODO: Check if file exists
 	client := slack.New(token, slack.OptionDebug(false))
 
 	fileUploadParams := slack.FileUploadParameters{
-		Channels:       []string{channelID},
-		File:           f.File,
+		Channels:       f.Channels,
+		InitialComment: f.InitialComment,
 		Filename:       f.Filename,
 		Filetype:       f.Filetype,
-		InitialComment: f.InitialComment,
+		Reader:         f.Reader,
 		Title:          f.Title,
 	}
 
-	_, err := client.UploadFile(fileUploadParams)
+	_, err = client.UploadFile(fileUploadParams)
 	if err != nil {
 		return "error", err
 	}
@@ -40,43 +84,32 @@ func (f *File) Upload(token, channelID string) (string, error) {
 	return "success", nil
 }
 
-func (f *File) UploadFromS3(token, channelID string) (string, error) {
+// func (f *File) UploadFromS3(token, channelID string) (string, error) {
 
-	// Deal with S3 staff
-	bucketName := "delme.yovko-inm.sand.mytaverse.io"
-	objectKey := "report-users-20230526.xlsx"
+// 	// Deal with S3 staff
+// 	bucketName := "delme.yovko-inm.sand.mytaverse.io"
+// 	objectKey := "report-users-20230526.xlsx"
 
-	sdkConfig, err := config.LoadDefaultConfig(context.TODO())
-	if err != nil {
-		log.Println("Couldn't load default configuration. Have you set up your AWS account?")
-		log.Println(err)
-	}
-	s3Client := s3.NewFromConfig(sdkConfig)
+// 	// Work with File
+// 	S3ObjectData, err := S3BucketObjectReader(bucketName, objectKey)
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	result, err := s3Client.GetObject(context.TODO(), &s3.GetObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(objectKey),
-	})
-	if err != nil {
-		log.Printf("Couldn't get object %v:%v. Here's why: %v\n", bucketName, objectKey, err)
-		return "", err
-	}
-	defer result.Body.Close()
+// 	fileUploadParams := slack.FileUploadParameters{
+// 		Channels:       []string{channelID},
+// 		Reader:         bytes.NewReader(S3ObjectData),
+// 		Filename:       f.Filename,
+// 		InitialComment: f.InitialComment,
+// 		Title:          f.Filename,
+// 	}
 
-	fileUploadParams := slack.FileUploadParameters{
-		Channels:       []string{channelID},
-		Reader:         result.Body,
-		Filename:       f.Filename,
-		InitialComment: f.InitialComment,
-		Title:          f.Filename,
-	}
+// 	// Uploading
+// 	client := slack.New(token, slack.OptionDebug(false))
+// 	_, err = client.UploadFile(fileUploadParams)
+// 	if err != nil {
+// 		return "error", err
+// 	}
 
-	// Uploading
-	client := slack.New(token, slack.OptionDebug(false))
-	_, err = client.UploadFile(fileUploadParams)
-	if err != nil {
-		return "error", err
-	}
-
-	return "good", nil
-}
+// 	return "good", nil
+// }
