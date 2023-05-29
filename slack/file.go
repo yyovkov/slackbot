@@ -83,33 +83,3 @@ func (f *File) Upload(token string) (string, error) {
 
 	return "success", nil
 }
-
-// func (f *File) UploadFromS3(token, channelID string) (string, error) {
-
-// 	// Deal with S3 staff
-// 	bucketName := "delme.yovko-inm.sand.mytaverse.io"
-// 	objectKey := "report-users-20230526.xlsx"
-
-// 	// Work with File
-// 	S3ObjectData, err := S3BucketObjectReader(bucketName, objectKey)
-// 	if err != nil {
-// 		return "", err
-// 	}
-
-// 	fileUploadParams := slack.FileUploadParameters{
-// 		Channels:       []string{channelID},
-// 		Reader:         bytes.NewReader(S3ObjectData),
-// 		Filename:       f.Filename,
-// 		InitialComment: f.InitialComment,
-// 		Title:          f.Filename,
-// 	}
-
-// 	// Uploading
-// 	client := slack.New(token, slack.OptionDebug(false))
-// 	_, err = client.UploadFile(fileUploadParams)
-// 	if err != nil {
-// 		return "error", err
-// 	}
-
-// 	return "good", nil
-// }

@@ -45,7 +45,7 @@ func init() {
 	rootCmd.PersistentFlags().StringP("token", "k", os.Getenv("SLACK_AUTH_TOKEN"), "Slack App Token")
 	// rootCmd.MarkPersistentFlagRequired("token")
 
-	rootCmd.PersistentFlags().StringP("channel", "c", "", "Slack Workspace Channel Name")
+	rootCmd.PersistentFlags().StringP("channel", "c", os.Getenv("SLACK_CHANNEL_ID"), "Slack Workspace Channel Name")
 	rootCmd.MarkPersistentFlagRequired("channel")
 
 	versionTemplate := `{{printf "%s\n" .Version}}`

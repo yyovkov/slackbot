@@ -63,8 +63,11 @@ cobra-cli add message -p send
 go build
 ```
 
-## Run Against S3
+## Setup Test Environmment
 
 ``` bash
 export AWS_PROFILE=sandbox
+export AWS_DEFAULT_REGION=us-east-2
+export SLACK_AUTH_TOKEN=...
+export SLACK_CHANNEL_ID=...
 ```
