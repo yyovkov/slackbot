@@ -4,7 +4,6 @@ Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	// "slackbot/slack"
 	"slackbot/slack"
 
 	"github.com/spf13/cobra"
@@ -13,7 +12,7 @@ import (
 // postFileCmd represents the postFile command
 var postFileCmd = &cobra.Command{
 	Use:          "file",
-	Short:        "Upload file to slack channel",
+	Short:        "Upload local file to slack channel",
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
@@ -47,18 +46,26 @@ var postFileCmd = &cobra.Command{
 			return err
 		}
 
+		filetype, err := cmd.Flags().GetString("filetype")
+		if err != nil {
+			return err
+		}
+
 		f := &slack.File{}
-		f.Filename = filename
+		f.Channels = []string{channelID}
 		f.File = file
+		f.Filename = filename
+		f.Filetype = filetype
 		f.InitialComment = initialComment
 		f.Title = title
 
-		return uploadFile(*f, token, channelID)
+		return uploadFile(*f, token)
 	},
 }
 
-func uploadFile(file slack.File, token, channelID string) error {
-	_, err := file.Upload(token, channelID)
+func uploadFile(file slack.File, token string) error {
+	_, err := file.Upload(token)
+	// _, err := file.UploadFromS3(token, channelID)
 	return err
 }
 
